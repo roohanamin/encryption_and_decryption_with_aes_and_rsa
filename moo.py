@@ -1,7 +1,6 @@
 """Use of pycryptodome's encrypt and decrypt."""
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
-from Crypto.Util.Padding import pad
 from Crypto.Util import Counter
 
 class CbcMoo:
@@ -95,7 +94,6 @@ class CtrMoo:
     def __init__(self, key, nonce=None):
         self.key = key
         self.nonce = nonce or get_random_bytes(8)
-        # Adjust the counter size to match the block size of AES (16 bytes)
         self.counter = Counter.new(128, initial_value=int.from_bytes(self.nonce, byteorder='big'), allow_wraparound=False)
 
     def encrypt(self, plaintext):

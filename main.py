@@ -1,7 +1,9 @@
 """Module providing Cryptography tools and methods."""
+import random, time
 from base64 import b64encode
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
 #from Crypto.Util.Padding import pad, unpad
 from moo import CbcMoo, CfbMoo, OfbMoo, CtrMoo
 
@@ -43,6 +45,18 @@ def unpaddington(padded_ptext, msg_length):
     print(padded_ptext)
     return padded_ptext
 
+def introduce_error(ciphertext):
+    """Bit flip method."""
+    if len(ciphertext) > 0:
+        position_to_flip = random.randint(0, len(ciphertext) - 1)
+        bit_to_flip = 1 << random.randint(0, 7)
+        modified_byte = ciphertext[position_to_flip] ^ bit_to_flip
+        
+        modified_ciphertext = ciphertext[:position_to_flip] + bytes([modified_byte]) + ciphertext[position_to_flip + 1:]
+        return modified_ciphertext
+    else:
+        return ciphertext
+
 def mode_analysis(msg, rounds=1):
     """Function for printing results of ModeOfOperation Analysis."""
     processed_msg, msg_length = pad_and_trunc(msg)
@@ -69,6 +83,21 @@ def mode_analysis(msg, rounds=1):
         plaintext_ecb_same_key = unpaddington(cipher_ecb_same_key.decrypt(ciphertext_ecb_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_ecb_same_key)
 
+        print("====ERRORS IN ECB====")
+        original_ciphertext_ran_key = cipher_ecb_ran_key.encrypt(processed_msg)
+        alt_ciphertext_ran_key = introduce_error(original_ciphertext_ran_key)
+
+        original_ciphertext_same_key = cipher_ecb_same_key.encrypt(processed_msg)
+        alt_ciphertext_same_key = introduce_error(original_ciphertext_same_key)
+        print("Error propagated random key:", alt_ciphertext_ran_key)
+        print("Error propagated same key:", alt_ciphertext_same_key)
+
+        decrypt_attempt_ecb_ran_key = unpaddington(cipher_ecb_ran_key.decrypt(alt_ciphertext_ran_key), msg_length)
+        decrypt_attempt_ecb_same_key = unpaddington(cipher_ecb_same_key.decrypt(alt_ciphertext_same_key), msg_length)
+
+        print("Decrypt attempt from error propagated random key:", decrypt_attempt_ecb_ran_key)
+        print("Decrypt attempt from error propagated same key:", decrypt_attempt_ecb_same_key)
+
         print("====CBC MODE====")
         cipher_cbc_ran_key = CbcMoo(key_random) # replace with my moo implementation later
         cipher_cbc_same_key = CbcMoo(key_same)
@@ -93,6 +122,22 @@ def mode_analysis(msg, rounds=1):
         plaintext_cbc_same_key = unpaddington(cipher_cbc_same_key.decrypt(ciphertext_cbc_same_key_bytes), msg_length)
         print("Decrypted from same key:\n", plaintext_cbc_same_key)
 
+        print("====ERRORS IN CBC====")
+        original_ciphertext_ran_key_cbc = cipher_cbc_ran_key.encrypt(processed_msg)
+        alt_ciphertext_ran_key_cbc = introduce_error(original_ciphertext_ran_key_cbc)
+
+        original_ciphertext_same_key_cbc = cipher_cbc_same_key.encrypt(processed_msg)
+        alt_ciphertext_same_key_cbc = introduce_error(original_ciphertext_same_key_cbc)
+
+        print("Error propagated:", alt_ciphertext_ran_key_cbc)
+        print("Error propagated:", alt_ciphertext_same_key_cbc)
+
+        decrypt_attempt_cbc_ran_key = unpaddington(cipher_cbc_ran_key.decrypt(alt_ciphertext_ran_key_cbc), msg_length)
+        decrypt_attempt_cbc_same_key = unpaddington(cipher_cbc_same_key.decrypt(alt_ciphertext_same_key_cbc), msg_length)
+
+        print("Decrypt attempt from error propagated random key:", decrypt_attempt_cbc_ran_key)
+        print("Decrypt attempt from error propagated same key:", decrypt_attempt_cbc_same_key)
+
         print("====CFB MODE====")
         cipher_cfb_ran_key = CfbMoo(key_random) 
         cipher_cfb_same_key = CfbMoo(key_same)
@@ -108,6 +153,22 @@ def mode_analysis(msg, rounds=1):
 
         plaintext_cfb_same_key = unpaddington(cipher_cfb_same_key.decrypt(ciphertext_cfb_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_cfb_same_key)
+
+        print("====ERRORS IN CFB====")
+        original_ciphertext_ran_key_cfb = cipher_cfb_ran_key.encrypt(processed_msg)
+        alt_ciphertext_ran_key_cfb = introduce_error(original_ciphertext_ran_key_cfb)
+
+        original_ciphertext_same_key_cfb = cipher_cfb_same_key.encrypt(processed_msg)
+        alt_ciphertext_same_key_cfb = introduce_error(original_ciphertext_same_key_cfb)
+
+        print("Error propagated:", alt_ciphertext_ran_key_cfb)
+        print("Error propagated:", alt_ciphertext_same_key_cfb)
+
+        decrypt_attempt_cfb_ran_key = unpaddington(cipher_cfb_ran_key.decrypt(alt_ciphertext_ran_key_cfb), msg_length)
+        decrypt_attempt_cfb_same_key = unpaddington(cipher_cfb_same_key.decrypt(alt_ciphertext_same_key_cfb), msg_length)
+
+        print("Decrypt attempt from error propagated random key:", decrypt_attempt_cfb_ran_key)
+        print("Decrypt attempt from error propagated same key:", decrypt_attempt_cfb_same_key)
 
         print("====OFB MODE====")
         cipher_ofb_ran_key = OfbMoo(key_random)
@@ -125,6 +186,22 @@ def mode_analysis(msg, rounds=1):
         plaintext_ofb_same_key = unpaddington(cipher_ofb_same_key.decrypt(ciphertext_ofb_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_ofb_same_key)
 
+        print("====ERRORS IN OFB====")
+        original_ciphertext_ran_key_ofb = cipher_ofb_ran_key.encrypt(processed_msg)
+        alt_ciphertext_ran_key_ofb = introduce_error(original_ciphertext_ran_key_ofb)
+
+        original_ciphertext_same_key_ofb = cipher_ofb_same_key.encrypt(processed_msg)
+        alt_ciphertext_same_key_ofb = introduce_error(original_ciphertext_same_key_ofb)
+
+        print("Error propagated:", alt_ciphertext_ran_key_ofb)
+        print("Error propagated:", alt_ciphertext_same_key_ofb)
+
+        decrypt_attempt_ofb_ran_key = unpaddington(cipher_ofb_ran_key.decrypt(alt_ciphertext_ran_key_ofb), msg_length)
+        decrypt_attempt_ofb_same_key = unpaddington(cipher_ofb_same_key.decrypt(alt_ciphertext_same_key_ofb), msg_length)
+
+        print("Decrypt attempt from error propagated random key:", decrypt_attempt_ofb_ran_key)
+        print("Decrypt attempt from error propagated same key:", decrypt_attempt_ofb_same_key)
+
         print("====CTR MODE====")
         cipher_ctr_ran_key = CtrMoo(key_random, nonce=b64encode(get_random_bytes(8))) 
         cipher_ctr_same_key = CtrMoo(key_same, nonce=b64encode(get_random_bytes(8)))
@@ -140,6 +217,22 @@ def mode_analysis(msg, rounds=1):
 
         plaintext_ctr_same_key = unpaddington(cipher_ctr_same_key.decrypt(ciphertext_ctr_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_ctr_same_key)
+
+        print("====ERRORS IN CTR====")
+        original_ciphertext_ran_key_ctr = cipher_ctr_ran_key.encrypt(processed_msg)
+        alt_ciphertext_ran_key_ctr = introduce_error(original_ciphertext_ran_key_ctr)
+
+        original_ciphertext_same_key_ctr = cipher_ctr_same_key.encrypt(processed_msg)
+        alt_ciphertext_same_key_ctr = introduce_error(original_ciphertext_same_key_ctr)
+
+        print("Error propagated random key:", alt_ciphertext_ran_key_ctr)
+        print("Error propagated same key:", alt_ciphertext_same_key_ctr)
+
+        decrypt_attempt_ctr_ran_key = unpaddington(cipher_ctr_ran_key.decrypt(alt_ciphertext_ran_key_ctr), msg_length)
+        decrypt_attempt_ctr_same_key = unpaddington(cipher_ctr_same_key.decrypt(alt_ciphertext_same_key_ctr), msg_length)
+        
+        print("Decrypt attempt from error propagated random key:", decrypt_attempt_ctr_ran_key)
+        print("Decrypt attempt from error propagated random key:", decrypt_attempt_ctr_same_key)
 
 def encrypt_menu(song_lyrics, deep_quote):
     """Simple terminal menu for users to choose what they want to encrypt and analyze."""
@@ -178,6 +271,12 @@ def ask_again(running):
     else:
         print("Invalid input.")
         return ask_again(running)
+
+def measure_time(func, *args):
+    start_time = time.time()
+    result = func(*args)
+    elapsed_time = time.time() - start_time
+    return result, elapsed_time
 
 def main():
     """Main method... c'mon pylint this is getting ridiculous."""
@@ -249,6 +348,65 @@ Summertime, the livings easy"""
 
     encrypt_menu(song_lyrics, deep_quote)
 
+    secret_code = "Unguessable"
+    key = RSA.generate(2048)
+    encrypted_key = key.export_key(passphrase=secret_code, pkcs=8,
+                                protection="scryptAndAES128-CBC")
+
+    file_out = open("rsa_key.bin", "wb")
+    file_out.write(encrypted_key)
+    file_out.close()
+
+    print(key.publickey().export_key())
+
+    secret_code = "Unguessable"
+    encoded_key = open("rsa_key.bin", "rb").read()
+    key = RSA.import_key(encoded_key, passphrase=secret_code)
+
+    print(key.publickey().export_key())
+
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    file_out = open("private.pem", "wb")
+    file_out.write(private_key)
+    file_out.close()
+
+    public_key = key.publickey().export_key()
+    file_out = open("receiver.pem", "wb")
+    file_out.write(public_key)
+    file_out.close()
+
+    file_out = open("encrypted_data.bin", "wb")
+
+    recipient_key = RSA.import_key(open("receiver.pem").read())
+    session_key = get_random_bytes(16)
+
+    # Encrypt the session key with the public RSA key
+    cipher_rsa = PKCS1_OAEP.new(recipient_key)
+    enc_session_key = cipher_rsa.encrypt(session_key)
+
+    # Encrypt the data with the AES session key
+    cipher_aes = AES.new(session_key, AES.MODE_EAX)
+    ciphertext, tag = cipher_aes.encrypt_and_digest(song_lyrics)
+    [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+    file_out.close()
+    
+    file_in = open("encrypted_data.bin", "rb")
+
+    private_key = RSA.import_key(open("private.pem").read())
+
+    enc_session_key, nonce, tag, ciphertext = \
+    [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+    file_in.close()
+
+    # Decrypt the session key with the private RSA key
+    cipher_rsa = PKCS1_OAEP.new(private_key)
+    session_key = cipher_rsa.decrypt(enc_session_key)
+
+    # Decrypt the data with the AES session key
+    cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+    data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+    print(data.decode("utf-8"))
 
 if __name__ == "__main__":
     main()
