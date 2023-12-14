@@ -3,7 +3,7 @@ from base64 import b64encode
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 #from Crypto.Util.Padding import pad, unpad
-#from moo import ECB_MOO, CBC_MOO, CFB_MOO, OFB_MOO, CTR_MOO
+from moo import CbcMoo, CfbMoo, OfbMoo, CtrMoo
 
 def pad_and_trunc(msg):
     """For padding and truncating plaintext to program's constraints."""
@@ -70,8 +70,8 @@ def mode_analysis(msg, rounds=1):
         print("Decrypted from same key:\n", plaintext_ecb_same_key)
 
         print("====CBC MODE====")
-        cipher_cbc_ran_key = AES.new(key_random, AES.MODE_CBC) # replace with my moo implementation later
-        cipher_cbc_same_key = AES.new(key_same, AES.MODE_CBC)
+        cipher_cbc_ran_key = CbcMoo(key_random) # replace with my moo implementation later
+        cipher_cbc_same_key = CbcMoo(key_same)
 
         ciphertext_cbc_ran_key_bytes = cipher_cbc_ran_key.encrypt(processed_msg)
         print("Ciphertext bytes of random key:\n", ciphertext_cbc_ran_key_bytes)
@@ -87,17 +87,15 @@ def mode_analysis(msg, rounds=1):
         ct_cbc_same_key = b64encode(ciphertext_cbc_same_key_bytes).decode('utf-8')
         print("IV:", iv2, "Ciphertext of same key:\n", ct_cbc_same_key)
 
-        decipher_cbc_ran_key = AES.new(key_random, AES.MODE_CBC, iv=cipher_cbc_ran_key.iv)
-        plaintext_cbc_ran_key = unpaddington(decipher_cbc_ran_key.decrypt(ciphertext_cbc_ran_key_bytes), msg_length)
+        plaintext_cbc_ran_key = unpaddington(cipher_cbc_ran_key.decrypt(ciphertext_cbc_ran_key_bytes), msg_length)
         print("Decrypted from random key:\n", plaintext_cbc_ran_key)
 
-        decipher_cbc_same_key = AES.new(key_same, AES.MODE_CBC, iv=cipher_cbc_same_key.iv)
-        plaintext_cbc_same_key = unpaddington(decipher_cbc_same_key.decrypt(ciphertext_cbc_same_key_bytes), msg_length)
+        plaintext_cbc_same_key = unpaddington(cipher_cbc_same_key.decrypt(ciphertext_cbc_same_key_bytes), msg_length)
         print("Decrypted from same key:\n", plaintext_cbc_same_key)
 
         print("====CFB MODE====")
-        cipher_cfb_ran_key = AES.new(key_random, AES.MODE_CFB) 
-        cipher_cfb_same_key = AES.new(key_same, AES.MODE_CFB)
+        cipher_cfb_ran_key = CfbMoo(key_random) 
+        cipher_cfb_same_key = CfbMoo(key_same)
 
         ciphertext_cfb_ran_key = cipher_cfb_ran_key.encrypt(processed_msg)
         print("Ciphertext of random key:\n", ciphertext_cfb_ran_key)
@@ -105,17 +103,15 @@ def mode_analysis(msg, rounds=1):
         ciphertext_cfb_same_key = cipher_cfb_same_key.encrypt(processed_msg)
         print("Ciphertext of same key:\n", ciphertext_cfb_same_key)
 
-        decipher_cfb_ran_key = AES.new(key_random, AES.MODE_CFB, iv=cipher_cfb_ran_key.iv)
-        plaintext_cfb_ran_key = unpaddington(decipher_cfb_ran_key.decrypt(ciphertext_cfb_ran_key), msg_length)
+        plaintext_cfb_ran_key = unpaddington(cipher_cfb_ran_key.decrypt(ciphertext_cfb_ran_key), msg_length)
         print("Decrypted from random key:\n", plaintext_cfb_ran_key)
 
-        decipher_cfb_same_key = AES.new(key_same, AES.MODE_CFB, iv=cipher_cfb_same_key.iv)
-        plaintext_cfb_same_key = unpaddington(decipher_cfb_same_key.decrypt(ciphertext_cfb_same_key), msg_length)
+        plaintext_cfb_same_key = unpaddington(cipher_cfb_same_key.decrypt(ciphertext_cfb_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_cfb_same_key)
 
         print("====OFB MODE====")
-        cipher_ofb_ran_key = AES.new(key_random, AES.MODE_OFB)  
-        cipher_ofb_same_key = AES.new(key_same, AES.MODE_OFB)
+        cipher_ofb_ran_key = OfbMoo(key_random)
+        cipher_ofb_same_key = OfbMoo(key_same)
 
         ciphertext_ofb_ran_key = cipher_ofb_ran_key.encrypt(processed_msg)
         print("Ciphertext of random key:\n", ciphertext_ofb_ran_key)
@@ -123,17 +119,15 @@ def mode_analysis(msg, rounds=1):
         ciphertext_ofb_same_key = cipher_ofb_same_key.encrypt(processed_msg)
         print("Ciphertext of same key:\n", ciphertext_ofb_same_key)
 
-        decipher_ofb_ran_key = AES.new(key_random, AES.MODE_OFB, iv=cipher_ofb_ran_key.iv)
-        plaintext_ofb_ran_key = unpaddington(decipher_ofb_ran_key.decrypt(ciphertext_ofb_ran_key), msg_length)
+        plaintext_ofb_ran_key = unpaddington(cipher_ofb_ran_key.decrypt(ciphertext_ofb_ran_key), msg_length)
         print("Decrypted from random key:\n", plaintext_ofb_ran_key)
 
-        decipher_ofb_same_key = AES.new(key_same, AES.MODE_OFB, iv=cipher_ofb_same_key.iv)
-        plaintext_ofb_same_key = unpaddington(decipher_ofb_same_key.decrypt(ciphertext_ofb_same_key), msg_length)
+        plaintext_ofb_same_key = unpaddington(cipher_ofb_same_key.decrypt(ciphertext_ofb_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_ofb_same_key)
 
         print("====CTR MODE====")
-        cipher_ctr_ran_key = AES.new(key_random, AES.MODE_CTR, nonce=b64encode(get_random_bytes(8))) 
-        cipher_ctr_same_key = AES.new(key_same, AES.MODE_CTR, nonce=b64encode(get_random_bytes(8)))
+        cipher_ctr_ran_key = CtrMoo(key_random, nonce=b64encode(get_random_bytes(8))) 
+        cipher_ctr_same_key = CtrMoo(key_same, nonce=b64encode(get_random_bytes(8)))
 
         ciphertext_ctr_ran_key = cipher_ctr_ran_key.encrypt(processed_msg)
         print("Ciphertext of random key:\n", ciphertext_ctr_ran_key)
@@ -141,12 +135,10 @@ def mode_analysis(msg, rounds=1):
         ciphertext_ctr_same_key = cipher_ctr_same_key.encrypt(processed_msg)
         print("Ciphertext of same key:\n", ciphertext_ctr_same_key)
 
-        decipher_ctr_ran_key = AES.new(key_random, AES.MODE_CTR, nonce=cipher_ctr_ran_key.nonce)
-        plaintext_ctr_ran_key = unpaddington(decipher_ctr_ran_key.decrypt(ciphertext_ctr_ran_key), msg_length)
+        plaintext_ctr_ran_key = unpaddington(cipher_ctr_ran_key.decrypt(ciphertext_ctr_ran_key), msg_length)
         print("Decrypted from random key:\n", plaintext_ctr_ran_key)
 
-        decipher_ctr_same_key = AES.new(key_same, AES.MODE_CTR, nonce=cipher_ctr_same_key.nonce)
-        plaintext_ctr_same_key = unpaddington(decipher_ctr_same_key.decrypt(ciphertext_ctr_same_key), msg_length)
+        plaintext_ctr_same_key = unpaddington(cipher_ctr_same_key.decrypt(ciphertext_ctr_same_key), msg_length)
         print("Decrypted from same key:\n", plaintext_ctr_same_key)
 
 def encrypt_menu(song_lyrics, deep_quote):
